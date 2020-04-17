@@ -39,7 +39,7 @@ def max(a, b):
 def min(a, b):
     return a if a < b else b
 
-def get_board():
+def pawn_get_board():
     board = [[False]*board_size for r in range(board_size)]
     for r in range(max(row-2, 0), min(row+2+1, board_size)):
         for c in range(max(col-2, 0), min(col+2+1, board_size)):
@@ -49,7 +49,7 @@ def get_board():
 def pawn_turn():
     global row, col
     dlog('My location is: ' + str(row) + ' ' + str(col))
-    board = get_board()
+    board = pawn_get_board()
 
     # try catpuring pieces
     if check_space_wrapper(row + forward, col + 1) == opp_team: # up and right
