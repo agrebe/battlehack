@@ -43,6 +43,7 @@ def pawn_get_board():
     board = [[False]*board_size for r in range(board_size)]
     for r, c, bot in sense():
         board[r][c] = bot
+        dlog("Sensing bot: " + str(board[r][c]))
     return board
 
 def pawn_turn():
@@ -58,9 +59,9 @@ def pawn_turn():
         capture_wrapper(row + forward, col - 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col - 1) + ')')
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
-    elif (check_space_wrapper(row + 2*forward, col+1) and (False == board[row+2*forward][col+1] or team == board[row+2*forward][col+1])) \
-            or (check_space_wrapper(row + 2*forward, col-1) and (False == board[row+2*forward][col-1] or team == board[row+2*forward][col-1])):
-        pass
+    elif (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
+        dlog('Waiting, unit ahead:' + str(board[row+2*forward][col+1]) + ' ' + str(board[row+2*forward][col-1]))
+        dlog('Waiting, unit ahead:' + str(check_space_wrapper(row + 2*forward, col+1)) + ' ' + str(check_space_wrapper(row + 2*forward, col-1)))
     # otherwise try to move forward
     elif row + forward != -1 and row + forward != board_size and not check_space_wrapper(row + forward, col):
         move_forward_wrapper()
