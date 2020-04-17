@@ -57,6 +57,10 @@ def pawn_turn():
     elif check_space_wrapper(row + forward, col - 1) == opp_team: # up and left
         capture_wrapper(row + forward, col - 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col - 1) + ')')
+    # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
+    elif (check_space_wrapper(row + 2*forward, col+1) and (False == board[row+2*forward][col+1] or team == board[row+2*forward][col+1])) \
+            or (check_space_wrapper(row + 2*forward, col-1) and (False == board[row+2*forward][col-1] or team == board[row+2*forward][col-1])):
+        pass
     # otherwise try to move forward
     elif row + forward != -1 and row + forward != board_size and not check_space_wrapper(row + forward, col):
         move_forward_wrapper()
