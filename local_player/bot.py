@@ -34,9 +34,22 @@ def move_forward_wrapper():
     move_forward()
     row += forward
 
+def max(a, b):
+    return a if a > b else b
+def min(a, b):
+    return a if a < b else b
+
+def get_board():
+    board = [[False]*board_size for r in range(board_size)]
+    for r in range(max(row-2, 0), min(row+2+1, board_size)):
+        for c in range(max(col-2, 0), min(col+2+1, board_size)):
+            board[r][c] = check_space(r, c)
+    return board
+
 def pawn_turn():
     global row, col
     dlog('My location is: ' + str(row) + ' ' + str(col))
+    board = get_board()
 
     # try catpuring pieces
     if check_space_wrapper(row + forward, col + 1) == opp_team: # up and right
