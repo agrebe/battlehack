@@ -89,6 +89,23 @@ def pawn_turn():
         try_move_forward(board)
         dlog('Moved forward thanks to one defender!')
         return
+    # if a pawn sees a wall of pawns to its left (all 10 visible squares occupied by friendly pawns)
+    # and if that pawn is on the left half of the board, then advance
+    if (col == 1):
+        wall = True
+        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-1)
+        if (wall):
+            try_move_forward(board)
+            return
+ 
+    if (col > 1 and col < 8):
+        wall = True
+        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-1)
+        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-2)
+        if (wall):
+            try_move_forward(board)
+            return
+    
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
     if (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
         dlog('Waiting, unit ahead:' + str(board[row+2*forward][col+1]) + ' ' + str(board[row+2*forward][col-1]))
@@ -134,6 +151,16 @@ def overlord_turn():
             if check_space(index + 4 * forward, i) == opp_team:
                 if not check_space(index, i):
                     spawn(index, i)
+
+        # if columns 0 through n have been won, then spawn in column n+1
+        if team == check_space(15-index, 0):
+            for i in range(15):
+                if not (team == check_space(15-index, i+1)):
+                    if not check_space(index, i+1): spawn(index, i+1)
+                    if not check_space(index, i): spawn(index, i)
+                    if i > 0 and not check_space(index, i-1): spawn(index, i-1)
+                    if i > 1 and not check_space(index, i-2): spawn(index, i-2)
+                    break
         if not check_space(index, 1):
             spawn(index, 1)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(1) + ')')
