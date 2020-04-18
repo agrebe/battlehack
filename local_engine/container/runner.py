@@ -136,6 +136,7 @@ class RobotRunner():
             self.initialized = True
         except Exception as e:
             self.error_method(traceback.format_exc(limit=5))
+            if self.debug: raise
 
     def do_turn(self):
         if not self.initialized:
@@ -145,6 +146,7 @@ class RobotRunner():
                 exec(self.locals['turn'].__code__, self.globals, self.locals)
             except:
                 self.error_method(traceback.format_exc(limit=5))
+                if self.debug: raise
         else:
             self.error_method('Couldn\'t find turn function.')
 
