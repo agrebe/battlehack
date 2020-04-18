@@ -16,7 +16,6 @@ if team == Team.WHITE:
 else:
     forward = -1
     index = board_size - 1
-roundNum = 0 # round number local to the unit
 
 def check_space_wrapper(r, c):
     # check space, except doesn't hit you with game errors
@@ -59,11 +58,6 @@ def pawn_turn():
     elif check_space_wrapper(row + forward, col - 1) == opp_team: # up and left
         capture_wrapper(row + forward, col - 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col - 1) + ')')
-    # an edge bot can advance if it has a defender
-    # TODO: Maybe also make sure the defender won't move out of the way?
-    elif (col == 0 and team == check_space_wrapper(row, 1)) or (col == 15 and team == check_space_wrapper(row, 14)):
-        move_forward_wrapper()
-        dlog('Moved forward thanks to defender!')
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
     elif (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
         dlog('Waiting, unit ahead:' + str(board[row+2*forward][col+1]) + ' ' + str(board[row+2*forward][col-1]))
@@ -76,37 +70,12 @@ def pawn_turn():
     dlog('Done! Bytecode left: ' + str(bytecode))
 
 def overlord_turn():
-    global roundNum
-    roundNum += 1
-    if roundNum == 1:
-        spawn(index, 1)
-    elif roundNum == 2:
-        spawn(index, 14)
-    elif roundNum == 3:
-        spawn(index, 4)
-    elif roundNum == 4:
-        spawn(index, 11)
-    elif roundNum == 5:
-        spawn(index, 7)
-    elif roundNum == 6:
-        spawn(index, 8)
-    elif roundNum == 7:
-        spawn(index, 0)
-    elif roundNum == 8:
-        spawn(index, 15)
-    else:
-        if not check_space(index, 1):
-            spawn(index, 1)
-            dlog('Spawned unit at: (' + str(index) + ', ' + str(1) + ')')
-        if not check_space(index, 14):
-            spawn(index, 14)
-            dlog('Spawned unit at: (' + str(index) + ', ' + str(14) + ')')
-        for _ in range(board_size):
-            i = random.randint(0, board_size - 1)
-            if not check_space(index, i):
-                spawn(index, i)
-                dlog('Spawned unit at: (' + str(index) + ', ' + str(i) + ')')
-                break
+    for _ in range(board_size):
+        i = random.randint(0, board_size - 1)
+        if not check_space(index, i):
+            spawn(index, i)
+            dlog('Spawned unit at: (' + str(index) + ', ' + str(i) + ')')
+            break
 
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))
