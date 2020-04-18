@@ -134,6 +134,8 @@ class RobotRunner():
             exec(self.code['bot'], self.globals, self.locals)
             self.globals.update(self.locals)
             self.initialized = True
+        except KeyboardInterrupt: # allow interrupts
+            raise
         except Exception as e:
             self.error_method(traceback.format_exc(limit=5))
             if self.debug: raise
@@ -144,6 +146,8 @@ class RobotRunner():
         if 'turn' in self.locals and isinstance(self.locals['turn'], type(lambda: 1)):
             try:
                 exec(self.locals['turn'].__code__, self.globals, self.locals)
+            except KeyboardInterrupt: # allow interrupts
+                raise
             except:
                 self.error_method(traceback.format_exc(limit=5))
                 if self.debug: raise
