@@ -69,29 +69,38 @@ def pawn_turn():
     if check_space_wrapper(row + forward, col + 1) == opp_team: # up and right
         capture_wrapper(row + forward, col + 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col + 1) + ')')
-    elif check_space_wrapper(row + forward, col - 1) == opp_team: # up and left
+        return
+    if check_space_wrapper(row + forward, col - 1) == opp_team: # up and left
         capture_wrapper(row + forward, col - 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col - 1) + ')')
+        return
     # an edge bot can advance if it has a defender
     # TODO: Maybe also make sure the defender won't move out of the way?
-    elif (col == 0 and team == check_space_wrapper(row, 1)) or (col == 15 and team == check_space_wrapper(row, 14)):
+    if (col == 0 and team == check_space_wrapper(row, 1)) or (col == 15 and team == check_space_wrapper(row, 14)):
         try_move_forward(board)
         dlog('Moved forward thanks to defender!')
+        return
     # other bots can advance if they have two defenders at least with some probability
-    elif (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps:
+    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps:
         try_move_forward(board)
         dlog('Moved forward thanks to two defenders!')
-    elif (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < delta:
+        return
+    if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < delta:
         try_move_forward(board)
         dlog('Moved forward thanks to one defender!')
+        return
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
-    elif (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
+    if (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
         dlog('Waiting, unit ahead:' + str(board[row+2*forward][col+1]) + ' ' + str(board[row+2*forward][col-1]))
         dlog('Waiting, unit ahead:' + str(check_space_wrapper(row + 2*forward, col+1)) + ' ' + str(check_space_wrapper(row + 2*forward, col-1)))
+        return
+
     # otherwise try to move forward
-    else:
-        try_move_forward(board)
-        dlog('Moved forward!')
+    try_move_forward(board)
+    dlog('Moved forward!')
+
+def pawn_turn_wrapper():
+    pawn_turn()
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))
 
@@ -152,6 +161,6 @@ def overlord_turn():
     dlog('Done! Bytecode left: ' + str(bytecode))
 
 if robottype == RobotType.PAWN:
-    turn = pawn_turn
+    turn = pawn_turn_wrapper
 else:
     turn = overlord_turn
