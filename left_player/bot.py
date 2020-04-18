@@ -118,13 +118,11 @@ def overlord_turn():
         # if there is a column where the other team has units and you don't have units there (or in adjacent columns) spawn there
         # if there is a column where the opponent is in the 4 ranks nearest you, spawn there
         for i in range(board_size):
-            """
-            if check_space(index + forward, i) == opp_team \
-                    or check_space(index + 2 * forward, i) == opp_team and not check_space(index + forward, i) == team \
-                    or check_space(index + 3 * forward, i) == opp_team \
-                    and not (check_space(index + forward, i) == team or check_space(index + forward * 2, i) == team):
-            """
             if check_space(index + 3 * forward, i) == opp_team:
+                if not check_space(index, i) and not team == check_space(index + forward, i):
+                    spawn(index, i)
+        for i in range(board_size):
+            if check_space(index + 4 * forward, i) == opp_team:
                 if not check_space(index, i):
                     spawn(index, i)
         if not check_space(index, 1):
