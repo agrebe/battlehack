@@ -36,6 +36,17 @@ def move_forward_wrapper():
     global row
     move_forward()
     row += forward
+def can_move_forward(board):
+    if forward > 0 and row == board_size-1:
+        return False
+    if forward < 0 and row == 0:
+        return False
+    if board[row+forward][col]:
+        return False
+    return True
+def try_move_forward(board):
+    if can_move_forward(board):
+        move_forward_wrapper()
 
 def max(a, b):
     return a if a > b else b
@@ -64,22 +75,22 @@ def pawn_turn():
     # an edge bot can advance if it has a defender
     # TODO: Maybe also make sure the defender won't move out of the way?
     elif (col == 0 and team == check_space_wrapper(row, 1)) or (col == 15 and team == check_space_wrapper(row, 14)):
-        move_forward_wrapper()
+        try_move_forward(board)
         dlog('Moved forward thanks to defender!')
     # other bots can advance if they have two defenders at least with some probability
     elif (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps:
-        move_forward_wrapper()
+        try_move_forward(board)
         dlog('Moved forward thanks to two defenders!')
     elif (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < delta:
-        move_forward_wrapper()
+        try_move_forward(board)
         dlog('Moved forward thanks to one defender!')
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
     elif (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
         dlog('Waiting, unit ahead:' + str(board[row+2*forward][col+1]) + ' ' + str(board[row+2*forward][col-1]))
         dlog('Waiting, unit ahead:' + str(check_space_wrapper(row + 2*forward, col+1)) + ' ' + str(check_space_wrapper(row + 2*forward, col-1)))
     # otherwise try to move forward
-    elif row + forward != -1 and row + forward != board_size and not check_space_wrapper(row + forward, col):
-        move_forward_wrapper()
+    else:
+        try_move_forward(board)
         dlog('Moved forward!')
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))
