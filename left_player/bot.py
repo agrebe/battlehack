@@ -17,8 +17,9 @@ else:
     forward = -1
     index = board_size - 1
 roundNum = 0 # round number local to the unit
-eps = 1e-1 # probability to advance with two defenders (on sides)
-delta = 20e-2 # probability for columns 1 and 14 to advance with one defender
+eps1 = 1e-1 # probability to advance with two defenders (on sides)
+eps2 = 20e-2 # probability for columns 1 and 14 to advance with one defender
+eps3 = 2e-1 # probability to advance with only 1-thick wall on left
 
 def check_space_wrapper(r, c):
     # check space, except doesn't hit you with game errors
@@ -81,11 +82,11 @@ def pawn_turn():
         dlog('Moved forward thanks to defender!')
         return
     # other bots can advance if they have two defenders at least with some probability
-    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps:
+    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps1:
         try_move_forward(board)
         dlog('Moved forward thanks to two defenders!')
         return
-    if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < delta:
+    if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < eps2:
         try_move_forward(board)
         dlog('Moved forward thanks to one defender!')
         return
@@ -101,7 +102,9 @@ def pawn_turn():
     if (col > 1 and col < 8):
         wall = True
         for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-1)
-        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-2)
+        if (random.random() < eps3):
+            for i in range(5):
+                wall = wall and team == check_space_wrapper(row+i-2, col-2)
         if (wall):
             try_move_forward(board)
             return
