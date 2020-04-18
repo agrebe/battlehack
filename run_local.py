@@ -49,14 +49,14 @@ def step(number_of_turns=1):
         viewer.view()
 
 
-def play_all(delay=0.8, keep_history=False, real_time=False):
+def play_all(delay=0.8, keep_history=False, real_time=False, show_viewer=True):
     """
     This function plays the entire game, and views it in a nice animated way.
 
     If played in real time, make sure that the game does not print anything.
     """
 
-    if real_time:
+    if show_viewer and real_time:
         viewer_poison_pill = threading.Event()
         viewer_thread = threading.Thread(target=viewer.play_synchronized, args=(viewer_poison_pill,), kwargs={'delay': delay, 'keep_history': keep_history})
         viewer_thread.daemon = True
@@ -67,11 +67,12 @@ def play_all(delay=0.8, keep_history=False, real_time=False):
             break
         game.turn()
 
-    if real_time:
-        viewer_poison_pill.set()
-        viewer_thread.join()
-    else:
-        viewer.play(delay=delay, keep_history=keep_history)
+    if show_viewer:
+        if real_time:
+            viewer_poison_pill.set()
+            viewer_thread.join()
+        else:
+            viewer.play(delay=delay, keep_history=keep_history)
 
     print(f'{game.winner} wins!')
 
@@ -88,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-rounds', default=GameConstants.MAX_ROUNDS, type=int, help="Override the max number of rounds for faster games.")
     parser.add_argument('--board-size', default=GameConstants.BOARD_SIZE, type=int, help="Override the board size for faster games.")
     parser.add_argument('--seed', default=GameConstants.DEFAULT_SEED, type=int, help="Override the seed used for random.")
+    parser.add_argument('--hide_viewer', action='store_true', help="Hide the viewer")
     args = parser.parse_args()
     args.debug = args.debug == 'true'
 
@@ -111,7 +113,8 @@ if __name__ == '__main__':
     # Here we check if the script is run using the -i flag.
     # If it is not, then we simply play the entire game.
     if not sys.flags.interactive:
-        play_all(delay = float(args.delay), keep_history = args.raw_text, real_time = not args.debug)
+        play_all(delay = float(args.delay), keep_history = args.raw_text, real_time = not args.debug,
+                 show_viewer = not args.hide_viewer)
 
     else:
         # print out help message!
