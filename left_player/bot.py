@@ -153,6 +153,15 @@ def overlord_turn():
                 if not check_space(index, i):
                     spawn(index, i)
                     return
+        # if a column is empty of friendly units, it should get at least one pawn
+        for i in range(16):
+            empty = True
+            for j in range(16):
+                empty = empty and not team == check_space(j,i)
+            if empty:
+                if not check_space(index, i):
+                    spawn(index, i)
+                    return
 
         # if columns 0 through n have been won, then spawn in column n+1
         if team == check_space(15-index, 0):
