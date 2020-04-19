@@ -123,6 +123,13 @@ def pawn_turn_wrapper():
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))
 
+# a column is "dead" if it is won, all columns to the left are won, and columns n+1, n+2, and n+3 are won
+def column_dead(n):
+    dead=True
+    for i in range(n+4):
+        dead = dead and team == check_space(15-index, i)
+    return dead
+
 def overlord_turn():
     if roundNum == 1:
         spawn(index, 1)
@@ -153,6 +160,7 @@ def overlord_turn():
                 if not check_space(index, i):
                     spawn(index, i)
                     return
+
         # if a column is empty of friendly units, it should get at least one pawn
         for i in range(16):
             empty = True
@@ -162,6 +170,17 @@ def overlord_turn():
                 if not check_space(index, i):
                     spawn(index, i)
                     return
+
+        # if the enemy has more units in the last 8 rows of a column than you do, spawn there
+        for i in range(16):
+            pawn_differential = 0
+            for j in range(8):
+                pawn = check_space(index + j*forward, i)
+                if (pawn == team): pawn_differential -= 1
+                if (pawn == opp_team): pawn_differential += 1
+            if pawn_differential > 0 and not check_space(index, i):
+                spawn(index, i)
+                return
 
         # if columns 0 through n have been won, then spawn in column n+1
         if team == check_space(15-index, 0):
@@ -180,7 +199,7 @@ def overlord_turn():
                         spawn(index, i-2)
                         return
                     break
-        if not check_space(index, 1):
+        if not check_space(index, 1) and not column_dead(1):
             spawn(index, 1)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(1) + ')')
             return
@@ -189,19 +208,19 @@ def overlord_turn():
             spawn(index, 14)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(14) + ')')
         """
-        if not check_space(index, 0):
+        if not check_space(index, 0) and not column_dead(0):
             spawn(index, 0)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(0) + ')')
             return
         # spawn near sides at higher probability
         i = random.randint(0, board_size - 1)
         if (i <= 3 or i >= 12):
-            if not check_space(index, i):
+            if not check_space(index, i) and not column_dead(i):
                 spawn(index, i)
                 return
         for _ in range(100):
             i = random.randint(0, board_size - 1)
-            if not check_space(index, i):
+            if not check_space(index, i) and not column_dead(i):
                 spawn(index, i)
                 dlog('Spawned unit at: (' + str(index) + ', ' + str(i) + ')')
                 return
