@@ -86,22 +86,23 @@ def pawn_turn():
         try_move_forward(board)
         dlog('Moved forward thanks to two defenders!')
         return
-    if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < eps2:
+    #if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < eps2:
+    if (col == 1) and (team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2)):
         try_move_forward(board)
-        dlog('Moved forward thanks to one defender!')
+        dlog('Moved forward thanks to defender stack!')
         return
     # if a pawn sees a wall of pawns to its left (all 10 visible squares occupied by friendly pawns)
     # and if that pawn is on the left half of the board, then advance
     if (col == 1):
         wall = True
-        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-1)
+        for i in range(5): wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
         if (wall):
             try_move_forward(board)
             return
  
     if (col > 1 and col < 8):
         wall = True
-        for i in range(5): wall = wall and team == check_space_wrapper(row+i-2, col-1)
+        for i in range(5): wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
         if (random.random() < eps3):
             for i in range(5):
                 wall = wall and team == check_space_wrapper(row+i-2, col-2)
@@ -178,9 +179,20 @@ def overlord_turn():
                 pawn = check_space(index + j*forward, i)
                 if (pawn == team): pawn_differential -= 1
                 if (pawn == opp_team): pawn_differential += 1
-            if pawn_differential > 0 and not check_space(index, i):
-                spawn(index, i)
-                return
+            if pawn_differential > 0:
+                if not check_space(index, i):
+                    spawn(index, i)
+                    return
+                # if the column is already won by opponent, give up
+                if check_space(index, i) == opp_team:
+                    pass
+                # if the space is occupied, try spawning in neighbors
+                elif i > 0 and not check_space(index, i-1):
+                    spawn(index, i-1)
+                    return
+                elif i < 15 and not check_space(index, i+1):
+                    spawn(index, i+1)
+                    return
 
         # if columns 0 through n have been won, then spawn in column n+1
         if team == check_space(15-index, 0):
@@ -212,6 +224,10 @@ def overlord_turn():
             spawn(index, 0)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(0) + ')')
             return
+        if not check_space(index, 2) and not column_dead(2):
+            spawn(index, 2)
+            dlog('Spawned unit at: (' + str(index) + ', ' + str(2) + ')')
+            return
         # spawn near sides at higher probability
         i = random.randint(0, board_size - 1)
         if (i <= 3 or i >= 12):
@@ -227,8 +243,8 @@ def overlord_turn():
 
 def overlord_turn_wrapper():
     global roundNum
-    overlord_turn()
     roundNum += 1
+    overlord_turn()
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))    
 
