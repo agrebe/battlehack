@@ -67,13 +67,13 @@ def pawn_turn():
     board = pawn_get_board()
 
     # try capturing pieces
-    if check_space_wrapper(row + forward, col + 1) == opp_team: # up and right
-        capture_wrapper(row + forward, col + 1)
-        dlog('Captured at: (' + str(row + forward) + ', ' + str(col + 1) + ')')
-        return
     if check_space_wrapper(row + forward, col - 1) == opp_team: # up and left
         capture_wrapper(row + forward, col - 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col - 1) + ')')
+        return
+    if check_space_wrapper(row + forward, col + 1) == opp_team: # up and right
+        capture_wrapper(row + forward, col + 1)
+        dlog('Captured at: (' + str(row + forward) + ', ' + str(col + 1) + ')')
         return
     # an edge bot can advance if it has a defender
     # TODO: Maybe also make sure the defender won't move out of the way?
@@ -87,7 +87,7 @@ def pawn_turn():
         dlog('Moved forward thanks to two defenders!')
         return
     #if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < eps2:
-    if (col == 1) and (team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2)):
+    if (col == 1) and ((team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2))):
         try_move_forward(board)
         dlog('Moved forward thanks to defender stack!')
         return
@@ -105,7 +105,7 @@ def pawn_turn():
         for i in range(5): wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
         if (random.random() < eps3):
             for i in range(5):
-                wall = wall and team == check_space_wrapper(row+i-2, col-2)
+                wall = wall and (team == check_space_wrapper(row+i-2, col-2) or row+i-2 < 0 or row+i-2 > 15)
         if (wall):
             try_move_forward(board)
             return
@@ -211,15 +211,25 @@ def overlord_turn():
                         spawn(index, i-2)
                         return
                     break
+        # try to spawn in columns 0-2 (preferentially in 1)
+        randInt = random.randint(0, 5)
+        if randInt < 3:
+            if not check_space(index, 1) and not column_dead(1): 
+                spawn(index, 1)
+                return
+        elif randInt < 5:
+            if not check_space(index, 0) and not column_dead(0): 
+                spawn(index, 0)
+                return
+        else:
+            if not check_space(index, 2) and not column_dead(2): 
+                spawn(index, 2)
+                return
+        # now try the other columns in 0-2 if this failed
         if not check_space(index, 1) and not column_dead(1):
             spawn(index, 1)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(1) + ')')
             return
-        """
-        if not check_space(index, 14):
-            spawn(index, 14)
-            dlog('Spawned unit at: (' + str(index) + ', ' + str(14) + ')')
-        """
         if not check_space(index, 0) and not column_dead(0):
             spawn(index, 0)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(0) + ')')
