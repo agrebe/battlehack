@@ -2,36 +2,34 @@ import dis
 import types
 import struct
 
-def g(a):
-    print(a)
-print(g.__code__.co_varnames)
-
-def make_int(i):
-    return struct.pack('I', i)
-def make_pointer(p):
-    return struct.pack('P', p)
-
+# # Dummy
+# payload = bytes([
+#     dis.opmap['LOAD_CONST'], 0, # load None
+#     dis.opmap['RETURN_VALUE'], 0 # return it
+# ])
+payload_consts = (None, 'hello world')
+payload_names = ('print',)
+payload = bytes([
+    dis.opmap['LOAD_GLOBAL'], 0, # load print
+    dis.opmap['LOAD_CONST'], 1, # load hello world
+    dis.opmap['CALL_FUNCTION'], 1, # print(...)
+    dis.opmap['LOAD_CONST'], 0, # load None
+    dis.opmap['RETURN_VALUE'], 0 # return it
+])
 evil_struct = {
-    'code': bytes([
-        dis.opmap['LOAD_CONST'], 0, # load None
-        dis.opmap['RETURN_VALUE'], 0 # return it
-    ]),
-    'consts': (None,),
-    'names': (),
+    'code': payload,
+    'consts': payload_consts,
+    'names': payload_names,
     'varnames': (),
     'freevars': (),
     'cellvars': (),
     'filename': '<dummy>',
     'name': 'evil_code',
-    'lnotab': b'\x02\x00',
+    'lnotab': str(len(payload)).encode('utf-8') + b'\x00',
     'weakreflist': []
 }
 evil_array = struct.pack(
-    'iiiiiiPPPPPPPPPPPPP',
-    0, # posonlyargcount
-    0, # kwonlyargcount
-    0, # nlocals
-    1, # stack size
+    'iiPPPPPPPPPPPPP',
     0, # flags
     666, # first line no
     id(evil_struct['code']),
@@ -48,6 +46,15 @@ evil_array = struct.pack(
     0, # weakreflist
     0 # extra
 )
+for i in range(256**2):
+    test_evil_array = evil_array + chr(i%256).encode('utf-8') + chr(i//256).encode('utf-8')
+    h = hash(test_evil_array) # cache the hash
+    if h < 0:
+        h += 2**64
+    i1, i2 = h % 2**32, h >> 32
+    if i1 < 2**28 and i2 < 2**28: break
+evil_array = test_evil_array
+argcount = len(evil_array)
     
 # def f(): print('hello world')
 # evil_array = f.__code__
@@ -77,6 +84,10 @@ load_bytes_as_fn_co = types.CodeType(
 )
 dis.disassemble(load_bytes_as_fn_co)
 print(evil_fn)
+# print('here!')
+# import time
+# time.sleep(3)
 exec(load_bytes_as_fn_co)
 print(evil_fn)
-evil_fn()
+args = [0]*argcount
+evil_fn(*args)
