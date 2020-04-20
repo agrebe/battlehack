@@ -16,6 +16,7 @@ payload = bytes([
     dis.opmap['LOAD_CONST'], 0, # load None
     dis.opmap['RETURN_VALUE'], 0 # return it
 ])
+print('payload', payload)
 evil_struct = {
     'code': payload,
     'consts': payload_consts,
