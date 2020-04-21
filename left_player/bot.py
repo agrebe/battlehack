@@ -18,8 +18,10 @@ else:
     index = board_size - 1
 roundNum = 0 # round number local to the unit
 eps1 = 1e-1 # probability to advance with two defenders (on sides)
-eps2 = 20e-2 # probability for columns 1 and 14 to advance with one defender
-eps3 = 2e-1 # probability to advance with only 1-thick wall on left
+eps2 = 10e-2 # probability for columns 1 and 14 to advance with one defender
+eps3 = 0e-1 # probability to advance with only 1-thick wall on left
+eps4 = 5e-1 # probability for edge bot to advance
+eps5 = 5e-1 # probability for bot in column 1 to advance
 
 def check_space_wrapper(r, c):
     # check space, except doesn't hit you with game errors
@@ -58,7 +60,7 @@ def pawn_get_board():
     board = [[False]*board_size for r in range(board_size)]
     for r, c, bot in sense():
         board[r][c] = bot
-        dlog("Sensing bot: " + str(board[r][c]))
+        dlog("Sensing bot: " + str(r) + " " + str(c) + " " + str(board[r][c]))
     return board
 
 def pawn_turn():
@@ -77,36 +79,53 @@ def pawn_turn():
         return
     # an edge bot can advance if it has a defender
     # TODO: Maybe also make sure the defender won't move out of the way?
-    if (col == 0 and team == check_space_wrapper(row, 1)) or (col == 15 and team == check_space_wrapper(row, 14)):
+    # modification: make sure it has an entire row of defenders so that the attack doesn't fizzle
+    if ((col == 0 and team == check_space_wrapper(row, 1) and team == check_space_wrapper(row-forward, 1) 
+            and team == check_space_wrapper(row-2*forward, 1))  
+            or (col == 15 and team == check_space_wrapper(row, 14) 
+            and team == check_space_wrapper(row-forward, 14) 
+            and team == check_space_wrapper(row-2*forward, 14))) and random.random() < eps4:
         try_move_forward(board)
         dlog('Moved forward thanks to defender!')
         return
+    # near the back, advance more aggressively (since checks above will fail)
+    if ((row-2*forward < 0 or row-2*forward > 15)
+            and ((col == 0 and team == check_space_wrapper(row, 1))
+            or (col == 15 and team == check_space_wrapper(row, 14)))):
+        try_move_forward(board)
+        dlog("Moved forward since near back, on the side, and has one defender")
+        return
     # other bots can advance if they have two defenders at least with some probability
-    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and (col <= 3 or col >= 12) and random.random() < eps1:
+    # bots in the back three ranks with two defenders should always advance (easy to replace, also makes room for new bots)
+    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1)) and ((col <= 3 or col >= 12) and random.random() < eps1 or row-3*forward < 0 or row-3*forward > 15):
         try_move_forward(board)
         dlog('Moved forward thanks to two defenders!')
         return
     #if (col == 1) and (team == check_space_wrapper(row, col-1) or team == check_space_wrapper(row, col+1)) and random.random() < eps2:
-    if (col == 1) and ((team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2))):
+    if (col == 1) and ((team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2))) and random.random() < eps5:
         try_move_forward(board)
         dlog('Moved forward thanks to defender stack!')
         return
     # if a pawn sees a wall of pawns to its left (all 10 visible squares occupied by friendly pawns)
     # and if that pawn is on the left half of the board, then advance
+    # This seems like it should happen with probability 1
     if (col == 1):
         wall = True
         for i in range(5): wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
         if (wall):
             try_move_forward(board)
+            dlog('Moved forward thanks to wall')
             return
  
     if (col > 1 and col < 8):
         wall = True
-        for i in range(5): wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
-        if (random.random() < eps3):
-            for i in range(5):
-                wall = wall and (team == check_space_wrapper(row+i-2, col-2) or row+i-2 < 0 or row+i-2 > 15)
+        for i in range(5):
+            wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
+        #if (random.random() < eps3):
+        for i in range(5):
+            wall = wall and (team == check_space_wrapper(row+i-2, col-2) or row+i-2 < 0 or row+i-2 > 15)
         if (wall):
+            dlog('Moved forward thanks to thick wall')
             try_move_forward(board)
             return
     
@@ -161,6 +180,20 @@ def overlord_turn():
                 if not check_space(index, i):
                     spawn(index, i)
                     return
+
+        # if the enemy has a pawn in the back 4 ranks, spawn in that rank and those adjacent
+        for i in range(board_size):
+            for j in range(1, 4):
+                if check_space(index + j * forward, i) == opp_team:
+                    if not check_space(index, i):
+                        spawn(index, i)
+                        return
+                    if i > 0 and not check_space(index, i-1):
+                        spawn(index, i-1)
+                        return
+                    if i < 15 and not check_space(index, i+1):
+                        spawn(index, i+1)
+                        return
 
         # if a column is empty of friendly units, it should get at least one pawn
         for i in range(16):
