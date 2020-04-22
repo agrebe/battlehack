@@ -56,14 +56,14 @@ def get_defending_count():
             count += 1
     return count
 def get_forward_danger():
-    danger = 0
+    danger, defense = 0, 0
     for d in [-1, 1]:
-        if get(row, col+d) == team: danger -= 1
+        if get(row, col+d) == team: defense += 1
         if get(row+2*forward, col+d) == opp_team: danger += 1
-    return danger
+    return danger, defense
 
-FORWARD_CHANCE_1 = 1e-3
-FORWARD_CHANCE_2 = 0
+FORWARD_CHANCE_1 = 8e-2
+FORWARD_CHANCE_2 = 3e-2
 def pawn_turn():
     board = pawn_get_board()
     for d in [-1, 1]:
@@ -71,11 +71,13 @@ def pawn_turn():
             capture(row+forward, col+d)
             return
     if not can_move_forward(): return
-    defending_count = get_defending_count()
-    if defending_count > 0: return # keep supporting our troops
-    forward_danger = get_forward_danger()
+    # defending_count = get_defending_count()
+    # if defending_count > 0: return # keep supporting our troops
+    forward_danger, forward_defense = get_forward_danger()
     if forward_danger <= 0:
         move_forward()
+        return
+    if forward_defense < 2:
         return
     if forward_danger == 1:
         if random.random() < FORWARD_CHANCE_1:
@@ -96,21 +98,28 @@ def pawn_turn_wrapper():
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))
 
+UNIFORM_MIX = 0.01
 def overlord_turn():
     board = get_board()
     weights = [0]*board_size
     for r,row in enumerate(board):
         for c,value in enumerate(row):
             if value == opp_team:
-                weights[c] = weights[c] + 1
+                weight = 1
+                if abs(r - index) < 6:
+                    weight *= 25
+                weights[c] = weights[c] + weight/2
+                if c-1 >= 0: weights[c-1] = weights[c-1] + weight
+                if c+1 < board_size: weights[c+1] = weights[c+1] + weight
             elif value == team:
                 weights[c] = weights[c] - 1
-    weights = [max(0, w)+1 for w in weights]
+    
+    weights = [max(0, w)+UNIFORM_MIX for w in weights]
     for c in range(board_size):
         if check_space(index, c):
             weights[c] = 0
     total_weight = sum(weights)
-    i = random.randrange(total_weight)
+    i = random.random() * total_weight
     accum = 0
     for c,weight in enumerate(weights):
         if accum + weight > i:

@@ -1,6 +1,6 @@
 import random
 
-DEBUG = 1
+DEBUG = 0
 def dlog(str):
     if DEBUG > 0: log(str)
 
@@ -289,10 +289,26 @@ def overlord_turn():
                 return
             dlog("Failed to spawn anywhere (BAD)!")
 
+def count_material():
+    material = 0
+    for row in get_board():
+        for v in row:
+            if v == team: material += 1
+            elif v == opp_team: material -= 1
+    if team == Team.WHITE:
+        material -= roundNum % 2
+    else:
+        material -= (roundNum+1) % 2
+    return material
 def overlord_turn_wrapper():
     global roundNum
     roundNum += 1
     overlord_turn()
+    # log even for prod runs
+    if team == Team.WHITE:
+        log('== WHITE MATERIAL ' + str(count_material()) + ' ==')
+    else:
+        log('== BLACK MATERIAL ' + str(count_material()) + ' ==')
     bytecode = get_bytecode()
     dlog('Done! Bytecode left: ' + str(bytecode))    
 
