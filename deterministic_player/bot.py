@@ -17,13 +17,8 @@ else:
     forward = -1
     index = board_size - 1
 roundNum = 0 # round number local to the unit
-eps1 = 1e-1 # probability to advance with two defenders (on sides)
-eps2 = 10e-2 # probability for columns 1 and 14 to advance with one defender
-eps3 = 0e-1 # probability to advance with only 1-thick wall on left
-eps4 = 5e-1 # probability for edge bot to advance
-eps5 = 5e-1 # probability for bot in column 1 to advance
 
-aggressive_wait = 2 # for edge bots and bots in column 1
+aggressive_wait = 10 # for edge bots and bots in column 1
 timid_wait = 10 # for other bots
 
 
@@ -134,7 +129,6 @@ def pawn_turn():
         wall = True
         for i in range(5):
             wall = wall and (team == check_space_wrapper(row+i-2, col-1) or row+i-2 < 0 or row+i-2 > 15)
-        #if (random.random() < eps3):
         for i in range(5):
             wall = wall and (team == check_space_wrapper(row+i-2, col-2) or row+i-2 < 0 or row+i-2 > 15)
         if (wall):
@@ -271,6 +265,16 @@ def overlord_turn():
             if not check_space(index, 2) and not column_dead(2): 
                 spawn(index, 2)
                 return
+        # if we couldn't spawn in the one randomly selected, try all of them
+        if not check_space(index, 1) and not column_dead(1): 
+            spawn(index, 1)
+            return
+        if not check_space(index, 0) and not column_dead(0): 
+            spawn(index, 0)
+            return
+        if not check_space(index, 2) and not column_dead(2): 
+            spawn(index, 2)
+            return
         # now try the other columns in 0-2 if this failed
         if not check_space(index, 1) and not column_dead(1):
             spawn(index, 1)
