@@ -19,7 +19,7 @@ else:
 roundNum = 0 # round number local to the unit
 
 aggressive_wait = 10 # for edge bots and bots in column 1
-timid_wait = 10 # for other bots
+timid_wait = 20 # for other bots
 
 
 def check_space_wrapper(r, c):
@@ -71,6 +71,9 @@ def pawn_turn():
         capture_wrapper(row + forward, col + 1)
         dlog('Captured at: (' + str(row + forward) + ', ' + str(col + 1) + ')')
         return
+    # if there is something right in front of you, just wait and don't increment counters
+    if check_space_wrapper(row+forward,col):
+        return
     # near the back, advance more aggressively (since checks above will fail)
     if ((row-2*forward < 0 or row-2*forward > 15)
             and ((col == 0 and team == check_space_wrapper(row, 1))
@@ -94,7 +97,7 @@ def pawn_turn():
             wait_counter += 1
     # bots in column 1 can also advance fairly aggressively
     if (col == 1) and ((team == check_space_wrapper(row, 0) and team == check_space_wrapper(row-forward,0) and team == check_space_wrapper(row-2*forward,0)) or (team == check_space_wrapper(row, 2) and team == check_space_wrapper(row-forward,2) and team == check_space_wrapper(row-2*forward,2))):
-        if wait_counter >= aggressive_wait:
+        if wait_counter >= timid_wait:
             try_move_forward(board)
             dlog('Moved forward thanks to defender stack!')
             return
@@ -245,13 +248,12 @@ def overlord_turn():
                         spawn(index, i-2)
                         return
                     break
+        if not check_space(index, 1) and not column_dead(1): 
+            spawn(index, 1)
+            return
         # try to spawn in columns 0-2 (preferentially in 1)
         randInt = random.randint(0, 5)
-        if randInt < 3:
-            if not check_space(index, 1) and not column_dead(1): 
-                spawn(index, 1)
-                return
-        elif randInt < 5:
+        if randInt < 4:
             if not check_space(index, 0) and not column_dead(0): 
                 spawn(index, 0)
                 return
@@ -259,21 +261,6 @@ def overlord_turn():
             if not check_space(index, 2) and not column_dead(2): 
                 spawn(index, 2)
                 return
-        # if we couldn't spawn in the one randomly selected, try all of them
-        if not check_space(index, 1) and not column_dead(1): 
-            spawn(index, 1)
-            return
-        if not check_space(index, 0) and not column_dead(0): 
-            spawn(index, 0)
-            return
-        if not check_space(index, 2) and not column_dead(2): 
-            spawn(index, 2)
-            return
-        # now try the other columns in 0-2 if this failed
-        if not check_space(index, 1) and not column_dead(1):
-            spawn(index, 1)
-            dlog('Spawned unit at: (' + str(index) + ', ' + str(1) + ')')
-            return
         if not check_space(index, 0) and not column_dead(0):
             spawn(index, 0)
             dlog('Spawned unit at: (' + str(index) + ', ' + str(0) + ')')
@@ -294,6 +281,13 @@ def overlord_turn():
                 spawn(index, i)
                 dlog('Spawned unit at: (' + str(index) + ', ' + str(i) + ')')
                 return
+        # make sure we provably spawn if there is a space available
+        for i in range(16):
+            if not check_space(index, i):
+                spawn(index, i)
+                dlog('Spawned unit at: (' + str(index) + ', ' + str(i) + ')')
+                return
+            dlog("Failed to spawn anywhere (BAD)!")
 
 def overlord_turn_wrapper():
     global roundNum
