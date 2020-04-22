@@ -20,7 +20,7 @@ roundNum = 0 # round number local to the unit
 
 aggressive_wait = 10 # for edge bots and bots in column 1
 timid_wait = 20 # for other bots
-
+very_timid_wait = 50 # for center pawns
 
 def check_space_wrapper(r, c):
     # check space, except doesn't hit you with game errors
@@ -132,7 +132,17 @@ def pawn_turn():
             dlog('Moved forward thanks to thick wall')
             try_move_forward(board)
             return
-    
+    if (team == check_space_wrapper(row, col-1) and team == check_space_wrapper(row, col+1) 
+            and team == check_space_wrapper(row-forward, col-1) and team == check_space_wrapper(row-forward, col+1)
+            and team == check_space_wrapper(row-2*forward, col-1) and team == check_space_wrapper(row-2*forward, col+1)):
+        if wait_counter >= very_timid_wait:
+            try_move_forward(board)
+            dlog('Moved forward thanks to many defenders!')
+            return
+        else:
+            wait_counter += 1
+            
+
     # if there is an enemy pawn (2,1) or (2,-1) away, don't move forward
     if (opp_team == check_space_wrapper(row + 2*forward, col+1) or opp_team == check_space_wrapper(row + 2*forward, col-1)):
         dlog('Waiting, unit ahead:' + str(check_space_wrapper(row + 2*forward, col+1)) + ' ' + str(check_space_wrapper(row + 2*forward, col-1)))
