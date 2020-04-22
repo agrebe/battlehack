@@ -231,6 +231,16 @@ def overlord_turn():
                     spawn(index, i+1)
                     return
 
+        # if a column has only one friendly pawn it should get a second one
+        for i in range(16):
+            pawn_counter = 0
+            for j in range(16):
+                if team == check_space(j,i): pawn_counter += 1
+            if pawn_counter < 2:
+                if not check_space(index, i): 
+                    spawn(index, i)
+                    return
+
         # if columns 0 through n have been won, then spawn in column n+1
         if team == check_space(15-index, 0):
             for i in range(15):
