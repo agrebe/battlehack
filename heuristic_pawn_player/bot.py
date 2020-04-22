@@ -22,7 +22,6 @@ def get(r, c):
         return False
     if r < row-2 or r > row+2 or c < col-2 or c > col+2:
         return False
-    dlog('get '+str(r)+' '+str(c))
     return board[r][c]
 def can_move_forward():
     if forward > 0 and row == board_size-1:
