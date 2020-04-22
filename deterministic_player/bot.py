@@ -56,16 +56,10 @@ def try_move_forward(board):
     if can_move_forward(board):
         move_forward_wrapper()
 
-def max(a, b):
-    return a if a > b else b
-def min(a, b):
-    return a if a < b else b
-
 def pawn_get_board():
     board = [[False]*board_size for r in range(board_size)]
     for r, c, bot in sense():
         board[r][c] = bot
-        dlog("Sensing bot: " + str(r) + " " + str(c) + " " + str(board[r][c]))
     return board
 
 def pawn_turn():
